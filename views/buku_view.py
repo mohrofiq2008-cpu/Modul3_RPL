@@ -1,4 +1,3 @@
-
 import customtkinter as ctk
 from tkinter import ttk
 
@@ -104,7 +103,9 @@ class BukuView(ctk.CTk):
             sticky="ew"
         )
 
-        # Tombol simpan
+        # =====================================
+        # TOMBOL SIMPAN DATA
+        # =====================================
         self.btn_simpan = ctk.CTkButton(
             self.frame_kiri,
             text="Simpan Data",
@@ -120,14 +121,18 @@ class BukuView(ctk.CTk):
             sticky="ew"
         )
 
-        # Tombol update
-        self.btn_update = ctk.CTkButton(
+        # =====================================
+        # TOMBOL PERBARUI DATA
+        # Nama disesuaikan dengan Controller
+        # =====================================
+        self.btn_perbarui = ctk.CTkButton(
             self.frame_kiri,
             text="Perbarui Data (Update)",
             fg_color="blue",
+            hover_color="darkblue",
             height=35
         )
-        self.btn_update.grid(
+        self.btn_perbarui.grid(
             row=5,
             column=0,
             padx=18,
@@ -135,7 +140,12 @@ class BukuView(ctk.CTk):
             sticky="ew"
         )
 
-        # Tombol hapus
+        # Alias untuk kompatibilitas dengan kode lama
+        self.btn_update = self.btn_perbarui
+
+        # =====================================
+        # TOMBOL HAPUS DATA
+        # =====================================
         self.btn_hapus = ctk.CTkButton(
             self.frame_kiri,
             text="Hapus Data (Delete)",
@@ -178,9 +188,12 @@ class BukuView(ctk.CTk):
             pady=20
         )
 
-        # Style tabel
+        # =====================================
+        # STYLE TABEL
+        # =====================================
         style = ttk.Style()
         style.theme_use("default")
+
         style.configure(
             "Treeview",
             background="white",
@@ -188,6 +201,7 @@ class BukuView(ctk.CTk):
             rowheight=25,
             fieldbackground="white"
         )
+
         style.configure(
             "Treeview.Heading",
             background="white",
@@ -195,7 +209,9 @@ class BukuView(ctk.CTk):
             font=("Arial", 10, "bold")
         )
 
-        # Tabel buku
+        # =====================================
+        # TABEL BUKU
+        # =====================================
         self.tabel = ttk.Treeview(
             self.frame_kanan,
             columns=(
@@ -204,7 +220,8 @@ class BukuView(ctk.CTk):
                 "penulis",
                 "tahun_terbit"
             ),
-            show="headings"
+            show="headings",
+            selectmode="browse"
         )
 
         self.tabel.heading("id_buku", text="ID")
