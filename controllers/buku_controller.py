@@ -3,278 +3,133 @@ from models.buku_model import BukuModel
 from views.buku_view import BukuView
 
 class BukuController:
-    def __init__(self):
+    def __init__(self, user_role="anggota"):
+        self.user_role = user_role
         self.model = BukuModel()
         self.view = BukuView()
+        self.view.title(f"Sistem Manajemen Perpustakaan - Mode: {self.user_role.upper()}")
+        
+        self.buku_ids = []
 
-        # Menghubungkan tombol dengan Controller
-        self.view.btn_simpan.configure(
-            command=self.simpan_data
-        )
+        # Hubungkan tombol ke fungsinya masing-masing
+        self.view.btn_simpan.configure(command=self.simpan_data)
+        if hasattr(self.view, 'btn_update'):
+            self.view.btn_update.configure(command=self.perbarui_data)
+        if hasattr(self.view, 'btn_hapus'):
+            self.view.btn_hapus.configure(command=self.hapus_data)
 
-        self.view.btn_hapus.configure(
-            command=self.hapus_data
-        )
+        # Event ketika baris pada tabel diklik/dipilih
+        self.view.tabel.bind("<<TreeviewSelect>>", self.pilih_data_tabel)
 
-        self.view.btn_perbarui.configure(
-            command=self.perbarui_data
-        )
+        # Otorisasi role: Kunci semua tombol jika bukan admin
+        if self.user_role != "admin":
+            self.view.btn_simpan.configure(state="disabled", text="Akses Terkunci (Khusus Admin)")
+            if hasattr(self.view, 'btn_update'):
+                self.view.btn_update.configure(state="disabled")
+            if hasattr(self.view, 'btn_hapus'):
+                self.view.btn_hapus.configure(state="disabled")
+            self.view.entry_judul.configure(state="disabled")
+            self.view.entry_penulis.configure(state="disabled")
+            self.view.entry_tahun.configure(state="disabled")
 
-        # Mengisi form otomatis saat baris buku dipilih
-        self.view.tabel.bind(
-            "<<TreeviewSelect>>",
-            self.pilih_data
-        )
-
-        # Memuat data saat aplikasi dibuka
         self.muat_data_tabel()
 
     def muat_data_tabel(self):
-        # Mengosongkan tabel terlebih dahulu
         for item in self.view.tabel.get_children():
             self.view.tabel.delete(item)
-
-        # Mengambil data buku dari database
+            
         data_buku = self.model.get_all_buku()
+        self.buku_ids = []
+        
+        for index, buku in enumerate(data_buku, start=1):
+            self.buku_ids.append(buku["id_buku"])
+            self.view.tabel.insert("", "end", values=(index, buku["judul"], buku["penulis"], buku["tahun_terbit"]))
 
-        # Nomor tampilan berurutan, ID asli disimpan di iid
-        for nomor, buku in enumerate(data_buku, start=1):
-            self.view.tabel.insert(
-                "",
-                "end",
-                iid=str(buku["id_buku"]),
-                values=(
-                    nomor,
-                    buku["judul"],
-                    buku["penulis"],
-                    buku["tahun_terbit"]
-                )
-            )
-
-    def pilih_data(self, event=None):
-        # Memeriksa baris yang dipilih
-        selected = self.view.tabel.selection()
-
-        if not selected:
-            return
-
-        item = selected[0]
-        values = self.view.tabel.item(item, "values")
-
-        if not values:
-            messagebox.showerror(
-                "Error",
-                "Data buku yang dipilih tidak ditemukan."
-            )
-            return
-
-        # Mengambil data dari baris tabel
-        # values[0] = nomor urut
-        # values[1] = judul
-        # values[2] = penulis
-        # values[3] = tahun terbit
-        judul = values[1]
-        penulis = values[2]
-        tahun = values[3]
-
-        # Mengisi form judul buku
-        self.view.entry_judul.delete(0, "end")
-        self.view.entry_judul.insert(0, judul)
-
-        # Mengisi form nama penulis
-        self.view.entry_penulis.delete(0, "end")
-        self.view.entry_penulis.insert(0, penulis)
-
-        # Mengisi form tahun terbit
-        self.view.entry_tahun.delete(0, "end")
-        self.view.entry_tahun.insert(0, tahun)
+    def pilih_data_tabel(self, event):
+        """Mengisi otomatis kolom form input saat baris tabel diklik"""
+        selected_item = self.view.tabel.selection()
+        if selected_item:
+            item_data = self.view.tabel.item(selected_item[0])["values"]
+            
+            # Bersihkan form lalu isi dengan data yang dipilih
+            self.bersihkan_form()
+            self.view.entry_judul.insert(0, item_data[1])   # Judul Buku
+            self.view.entry_penulis.insert(0, item_data[2]) # Penulis
+            self.view.entry_tahun.insert(0, item_data[3])   # Tahun Terbit
 
     def simpan_data(self):
-        # Mengambil data dari form
-        judul = self.view.entry_judul.get().strip()
-        penulis = self.view.entry_penulis.get().strip()
-        tahun = self.view.entry_tahun.get().strip()
+        if self.user_role != "admin":
+            messagebox.showerror("Akses Ditolak", "Anda tidak memiliki izin untuk menambah data!")
+            return
 
-        # Memeriksa form kosong
+        judul = self.view.entry_judul.get()
+        penulis = self.view.entry_penulis.get()
+        tahun = self.view.entry_tahun.get()
+
         if not judul or not penulis or not tahun:
-            messagebox.showwarning(
-                "Peringatan",
-                "Semua kolom form harus diisi!"
-            )
+            messagebox.showwarning("Peringatan", "Semua kolom form harus diisi!")
             return
 
-        # Memastikan tahun berupa angka
-        try:
-            tahun = int(tahun)
-        except ValueError:
-            messagebox.showwarning(
-                "Peringatan",
-                "Tahun terbit harus berupa angka!"
-            )
-            return
-
-        # Menyimpan data melalui Model
-        berhasil = self.model.create_buku(
-            judul,
-            penulis,
-            tahun
-        )
-
-        if berhasil:
-            messagebox.showinfo(
-                "Sukses",
-                "Data buku berhasil disimpan!"
-            )
-
-            # Membersihkan form
-            self.bersihkan_form()
-
-            # Memuat ulang tabel
-            self.muat_data_tabel()
-        else:
-            messagebox.showerror(
-                "Error",
-                "Terjadi kesalahan saat menyimpan data."
-            )
-
-    def hapus_data(self):
-        # Memeriksa baris yang dipilih
-        selected = self.view.tabel.selection()
-
-        if not selected:
-            messagebox.showwarning(
-                "Peringatan",
-                "Pilih data buku yang ingin dihapus!"
-            )
-            return
-
-        # Mengambil baris yang dipilih
-        item = selected[0]
-        values = self.view.tabel.item(item, "values")
-
-        if not values:
-            messagebox.showerror(
-                "Error",
-                "Data buku yang dipilih tidak ditemukan."
-            )
-            return
-
-        # Mengambil ID asli dari iid, bukan nomor urut
-        id_buku = int(item)
-
-        # Konfirmasi penghapusan
-        konfirmasi = messagebox.askyesno(
-            "Konfirmasi",
-            f"Apakah Anda yakin ingin menghapus buku "
-            f"dengan ID {id_buku}?"
-        )
-
-        if not konfirmasi:
-            return
-
-        # Menghapus data melalui Model
-        berhasil = self.model.delete_buku(id_buku)
-
-        if berhasil:
-            messagebox.showinfo(
-                "Sukses",
-                "Data buku berhasil dihapus!"
-            )
-
+        if self.model.create_buku(judul, penulis, tahun):
+            messagebox.showinfo("Sukses", "Data buku berhasil disimpan!")
             self.bersihkan_form()
             self.muat_data_tabel()
         else:
-            messagebox.showerror(
-                "Gagal",
-                "Data buku gagal dihapus. "
-                "Periksa ID, koneksi database, atau "
-                "relasi peminjaman buku."
-            )
+            messagebox.showerror("Error", "Gagal menyimpan data.")
 
     def perbarui_data(self):
-        # Memeriksa baris yang dipilih
-        selected = self.view.tabel.selection()
-
-        if not selected:
-            messagebox.showwarning(
-                "Peringatan",
-                "Pilih data buku yang ingin diperbarui!"
-            )
+        if self.user_role != "admin":
+            messagebox.showerror("Akses Ditolak", "Anda tidak memiliki izin untuk memperbarui data!")
             return
 
-        # Mengambil baris yang dipilih
-        item = selected[0]
-        values = self.view.tabel.item(item, "values")
-
-        if not values:
-            messagebox.showerror(
-                "Error",
-                "Data buku yang dipilih tidak ditemukan."
-            )
+        selected_item = self.view.tabel.selection()
+        if not selected_item:
+            messagebox.showwarning("Peringatan", "Pilih baris buku di tabel yang ingin diperbarui!")
             return
 
-        # Mengambil ID asli dari iid
-        id_buku = int(item)
+        item_index = self.view.tabel.index(selected_item[0])
+        id_buku = self.buku_ids[item_index]
 
-        # Mengambil data baru dari form
-        judul = self.view.entry_judul.get().strip()
-        penulis = self.view.entry_penulis.get().strip()
-        tahun = self.view.entry_tahun.get().strip()
+        judul = self.view.entry_judul.get()
+        penulis = self.view.entry_penulis.get()
+        tahun = self.view.entry_tahun.get()
 
-        # Memeriksa form kosong
         if not judul or not penulis or not tahun:
-            messagebox.showwarning(
-                "Peringatan",
-                "Semua kolom form harus diisi!"
-            )
+            messagebox.showwarning("Peringatan", "Semua kolom form harus diisi untuk update!")
             return
 
-        # Memastikan tahun berupa angka
-        try:
-            tahun = int(tahun)
-        except ValueError:
-            messagebox.showwarning(
-                "Peringatan",
-                "Tahun terbit harus berupa angka!"
-            )
-            return
-
-        # Memperbarui data melalui Model
-        berhasil = self.model.update_buku(
-            id_buku,
-            judul,
-            penulis,
-            tahun
-        )
-
-        if berhasil:
-            messagebox.showinfo(
-                "Sukses",
-                "Data buku berhasil diperbarui!"
-            )
-
+        if hasattr(self.model, 'update_buku') and self.model.update_buku(id_buku, judul, penulis, tahun):
+            messagebox.showinfo("Sukses", "Data buku berhasil diperbarui!")
             self.bersihkan_form()
             self.muat_data_tabel()
         else:
-            messagebox.showerror(
-                "Error",
-                "Data buku gagal diperbarui. "
-                "Periksa koneksi database dan fungsi "
-                "update_buku() pada BukuModel."
-            )
+            messagebox.showerror("Error", "Gagal memperbarui data.")
+
+    def hapus_data(self):
+        if self.user_role != "admin":
+            messagebox.showerror("Akses Ditolak", "Anda tidak memiliki izin untuk menghapus data!")
+            return
+
+        selected_item = self.view.tabel.selection()
+        if not selected_item:
+            messagebox.showwarning("Peringatan", "Pilih baris buku di tabel yang ingin dihapus!")
+            return
+
+        item_index = self.view.tabel.index(selected_item[0])
+        id_buku = self.buku_ids[item_index]
+
+        if messagebox.askyesno("Konfirmasi", "Apakah Anda yakin ingin menghapus buku ini?"):
+            if hasattr(self.model, 'delete_buku') and self.model.delete_buku(id_buku):
+                messagebox.showinfo("Sukses", "Data buku berhasil dihapus!")
+                self.bersihkan_form()
+                self.muat_data_tabel()
+            else:
+                messagebox.showerror("Error", "Gagal menghapus data.")
 
     def bersihkan_form(self):
-        # Membersihkan seluruh kolom form
-        self.view.entry_judul.delete(0, "end")
-        self.view.entry_penulis.delete(0, "end")
-        self.view.entry_tahun.delete(0, "end")
+        self.view.entry_judul.delete(0, 'end')
+        self.view.entry_penulis.delete(0, 'end')
+        self.view.entry_tahun.delete(0, 'end')
 
-        # Menghapus pilihan baris pada tabel
-        selected = self.view.tabel.selection()
-
-        if selected:
-            self.view.tabel.selection_remove(*selected)
-
-    # Menjalankan aplikasi
     def run(self):
         self.view.mainloop()
