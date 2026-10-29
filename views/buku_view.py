@@ -1,7 +1,6 @@
 import customtkinter as ctk
 from tkinter import ttk
 
-
 class BukuView(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -12,7 +11,7 @@ class BukuView(ctk.CTk):
         self.minsize(1000, 600)
 
         # Tema aplikasi
-        ctk.set_appearance_mode("dark")
+        ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
 
         # Konfigurasi grid utama
@@ -27,7 +26,7 @@ class BukuView(ctk.CTk):
             self,
             text="Moh Rofiq As Shadiq Tolinggi_F5212530096",
             font=("Arial", 12, "bold"),
-            text_color="white"
+            text_color="black"
         )
         self.label_nama.place(
             relx=0.985,
@@ -38,7 +37,10 @@ class BukuView(ctk.CTk):
         # =====================================
         # FRAME KIRI: FORM DATA BUKU
         # =====================================
-        self.frame_kiri = ctk.CTkFrame(self)
+        self.frame_kiri = ctk.CTkFrame(
+            self,
+            fg_color="#F0F0F0"
+        )
         self.frame_kiri.grid(
             row=0,
             column=0,
@@ -123,7 +125,6 @@ class BukuView(ctk.CTk):
 
         # =====================================
         # TOMBOL PERBARUI DATA
-        # Nama disesuaikan dengan Controller
         # =====================================
         self.btn_perbarui = ctk.CTkButton(
             self.frame_kiri,
@@ -140,7 +141,7 @@ class BukuView(ctk.CTk):
             sticky="ew"
         )
 
-        # Alias untuk kompatibilitas dengan kode lama
+        # Alias untuk kompatibilitas controller lama
         self.btn_update = self.btn_perbarui
 
         # =====================================
@@ -164,7 +165,10 @@ class BukuView(ctk.CTk):
         # =====================================
         # FRAME KANAN: TABEL DAFTAR BUKU
         # =====================================
-        self.frame_kanan = ctk.CTkFrame(self)
+        self.frame_kanan = ctk.CTkFrame(
+            self,
+            fg_color="#F0F0F0"
+        )
         self.frame_kanan.grid(
             row=0,
             column=1,
@@ -204,7 +208,7 @@ class BukuView(ctk.CTk):
 
         style.configure(
             "Treeview.Heading",
-            background="white",
+            background="#E0E0E0",
             foreground="black",
             font=("Arial", 10, "bold")
         )
@@ -256,4 +260,25 @@ class BukuView(ctk.CTk):
             padx=15,
             pady=(0, 15),
             sticky="nsew"
+        )
+
+        # =====================================
+        # TOMBOL LOGOUT DI POJOK KANAN BAWAH
+        self.btn_logout = ctk.CTkButton(
+            self.frame_kanan,
+            text="Logout ➔",
+            fg_color="#DC2626",
+            hover_color="#B91C1C",
+            text_color="white",
+            font=("Arial", 12),
+            height=28,
+            width=75,
+            corner_radius=5
+        )
+
+        # Letakkan di pojok kanan bawah kotak tabel
+        self.btn_logout.place(
+            relx=0.985,
+            rely=0.98,
+            anchor="se"
         )

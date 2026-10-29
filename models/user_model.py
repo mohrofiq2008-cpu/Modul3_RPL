@@ -7,7 +7,7 @@ class UserModel:
         self.conn = self.db.get_connection()
         self.table_name = "users"
 
-    @staticmethod
+    @staticmethod   
     def hash_password(password):
         return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -15,10 +15,26 @@ class UserModel:
         if self.conn:
             cursor = self.conn.cursor(dictionary=True)
             password_hash = self.hash_password(password)
-            # Parameterized Query untuk mencegah SQL Injection
             query = f"SELECT id_user, username, role FROM {self.table_name} WHERE username = %s AND password = %s"
             cursor.execute(query, (username, password_hash))
             user = cursor.fetchone()
             cursor.close()
             return user
         return None
+
+    # === TUGAS NO. 1: Tambahkan metode register_user ===
+    def register_user(self, username, password, role="anggota"):
+        if self.conn:
+            try:
+                cursor = self.conn.cursor()
+                # Hash password menggunakan SHA-256 sebelum disimpan
+                password_hash = self.hash_password(password)
+                query = f"INSERT INTO {self.table_name} (username, password, role) VALUES (%s, %s, %s)"
+                cursor.execute(query, (username, password_hash, role))
+                self.conn.commit()
+                cursor.close()
+                return True
+            except Exception as e:
+                print(f"Error Register: {e}")
+                return False
+        return False
