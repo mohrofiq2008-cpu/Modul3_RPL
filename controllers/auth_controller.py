@@ -3,6 +3,7 @@ from models.user_model import UserModel
 from views.login_view import LoginView
 from controllers.buku_controller import BukuController
 
+
 class AuthController:
     def __init__(self):
         self.model = UserModel()
@@ -14,7 +15,25 @@ class AuthController:
             command=self.proses_login
         )
 
+        # Memeriksa koneksi database
+        if not self.model.conn:
+            messagebox.showerror(
+                "Koneksi Database Gagal",
+                "Tidak dapat terhubung ke MySQL.\n\n"
+                "Pastikan MySQL sudah berjalan dan "
+                "database perpustakaan tersedia."
+            )
+
     def proses_login(self):
+        # Memastikan koneksi database tersedia
+        if not self.model.conn:
+            messagebox.showerror(
+                "Koneksi Database Gagal",
+                "Login tidak dapat diproses karena "
+                "koneksi database tidak tersedia."
+            )
+            return
+
         username = self.view.entry_username.get().strip()
         password = self.view.entry_password.get()
 
@@ -44,7 +63,6 @@ class AuthController:
             self.view.withdraw()
 
             # Buka halaman utama perpustakaan
-            # on_logout menghubungkan Logout ke halaman Login
             self.app_utama = BukuController(
                 user_role=role,
                 on_logout=self.tampilkan_login

@@ -1,15 +1,38 @@
 import mysql.connector
+from mysql.connector import Error
 
-# Fungsi ini tetap ada agar buku_model.py tidak error
-def get_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",
-        database="perpustakaan"
-    )
-
-# Tambahkan kelas Database ini agar user_model.py dari modul berjalan lancar
 class Database:
+    def __init__(self):
+        self.host = "127.0.0.1"
+        self.port = 3306
+        self.db_name = "perpustakaan"
+        self.username = "root"
+        self.password = ""
+        self.conn = None
+
     def get_connection(self):
-        return get_connection()
+        try:
+            self.conn = mysql.connector.connect(
+                host=self.host,
+                port=self.port,
+                database=self.db_name,
+                user=self.username,
+                password=self.password,
+                connection_timeout=5
+            )
+
+            if self.conn.is_connected():
+                return self.conn
+
+            self.conn.close()
+            return None
+
+        except Error as e:
+            print(f"Koneksi database gagal: {e}")
+            return None
+
+
+# Kompatibilitas dengan kode lama
+def get_connection():
+    db = Database()
+    return db.get_connection()
