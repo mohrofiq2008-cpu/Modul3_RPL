@@ -1,22 +1,33 @@
+import sys
+from pathlib import Path
 from unittest.mock import MagicMock
+
+# Menambahkan folder utama proyek ke jalur pencarian Python
+ROOT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT_DIR))
+
 from models.user_model import UserModel
+
 
 def test_hash_password_konsisten():
     password_asli = "admin123"
     hash_1 = UserModel.hash_password(password_asli)
     hash_2 = UserModel.hash_password(password_asli)
 
-    # Memastikan hash tidak sama dengan plaintext dan bersifat konsisten
+    # Memastikan hasil hash tidak sama dengan plain text dan bersifat konsisten
     assert hash_1 != password_asli
     assert hash_1 == hash_2
-    assert len(hash_1) == 64  # Format standar SHA-256
+    assert len(hash_1) == 64  # Panjang karakter standar SHA-256
+
 
 def test_autentikasi_pengguna_berhasil():
-    model = UserModel()
+    model = UserModel.__new__(UserModel)
     model.conn = MagicMock()
+    model.table_name = "users"
+
     mock_cursor = MagicMock()
 
-    # Simulasi data user dari database seolah-olah username & password cocok
+    # Simulasi kembalian data dari database ketika username & password cocok
     mock_cursor.fetchone.return_value = {
         "id_user": 1,
         "username": "petugas",
